@@ -1,29 +1,8 @@
-from users.models import User
-import unicodedata
 from PIL import Image, UnidentifiedImageError
+import unicodedata
 
-# Comprobamos si el usuario ya existe.
-def validate_existence(username, email):
-    
-    if (User.objects.filter(username__iexact = username).exists()):
-        return {
-            'success': False,
-            'message_error': "Este username no esta disponible.",
-        }
-    
-    if (User.objects.filter(email__iexact = email).exists()):
-            return {
-                'success': False,
-                'message_error': "Este correo no esta disponible.",
-            }
-    
-    return {
-        'success': True,
-        'message_error': "",
-    }
-
-# Comprobamos que el nombre de usuario tenga un formato correcto.
-def validate_username(username):
+# Valida si el username del usuario cumple con las condiciones de longitud y caracteres permitidos
+def validate_username(username: str):
 
     if (len(username) > 30 or len(username) < 5):
         return {
@@ -42,8 +21,8 @@ def validate_username(username):
         'message_error': "",
     }
 
-# Comprobamos que el correo del usuario tenga un formato correcto.
-def validate_email(email):
+# Valida si el email del usuario cumple con las condiciones de formato y caracteres permitidos
+def validate_email(email: str):
 
     user_email = email[:email.find('@')]
     domain = email[email.find('@')+1:]
@@ -79,9 +58,8 @@ def validate_email(email):
     }
 
 
-# Comprobamos que la contraseña del usuario tenga un formato correcto 
-# y se igual a la repeticion.
-def validate_password(password, repeat_password):
+# Valida si la contraseña del usuario cumple con las condiciones de longitud, caracteres permitidos y coincidencia con la contraseña repetida
+def validate_password(password: str, repeat_password: str):
     if (len(password) > 30 or len(password) < 5):
             return {
                 'success': False,
@@ -112,7 +90,7 @@ def validate_password(password, repeat_password):
     }
 
 
-# Comprobamos que la imagen de perfil del usuario cumpla ciertas condiciones.
+# Valida si el avatar del usuario cumple con las condiciones de tamaño, formato y dimensiones
 def validate_avatar(img_avatar):
 
     if img_avatar.size > 2097152:
