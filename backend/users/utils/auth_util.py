@@ -6,17 +6,25 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 
 from users.models import Verification, User
-from users.utils.auth_validator import validate_free_user
+from users.validators.auth_validator import validate_free_user
 
 # Parsea los datos del usuario para crear un nuevo usuario
 def parse_data_user(username: str, email: str, password: str, avatar, is_verified: bool):
+    if username == None or email == None or password == None or is_verified == None:
+        return {
+            'success': False,
+            'message_error': "Falta informacion del usuario"
+        }
+    
     return {
+        'success': True,
         'username': username,
         'first_name': username,
         'email': email,
         'password': password,
         'avatar': avatar,
         'is_verified': is_verified,
+        'date_joined': timezone.now(),
     }
 
 # Genera un codigo de verificacion aleatorio de 6 digitos
@@ -60,7 +68,7 @@ def get_verification(email_or_username: str):
 # Carga el html del email de verificacion
 def load_email_html_verify(code: str):
     return render_to_string(
-        "emails/verification_code.html",
+        "verification_code.html",
         {
             "code": code
         }

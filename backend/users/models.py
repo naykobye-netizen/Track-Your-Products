@@ -26,4 +26,4 @@ class Verification(models.Model):
         return secrets.token_urlsafe(64)
 
     tmp_token = models.CharField(max_length=255, default=create_tmp_token, editable=False)
-    attemps = models.IntegerField(default=0)
+    attempts = models.IntegerField(default=0)

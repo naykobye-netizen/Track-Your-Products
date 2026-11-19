@@ -23,6 +23,8 @@ def validate_free_user(username: str, email: str):
             }
         except User.DoesNotExist:
             pass
+        except User.MultipleObjectsReturned:
+            pass
 
     return {
         'success': True,
@@ -43,7 +45,7 @@ def is_expired_verify(verification: str):
             'message_error': "El codigo ha expirado.",
         }
 
-    if verification.attemps >= 5:
+    if verification.attempts >= 5:
         verification.delete()
         return {
             'success': False,
@@ -58,7 +60,7 @@ def is_expired_verify(verification: str):
 # Verifica si el codigo de verificacion es correcto
 def is_correct_code_verify(verification: str, code: str):
     if verification.code != int(code):
-        verification.attemps += 1
+        verification.attempts += 1
         verification.save()
         return {
             'success': False,

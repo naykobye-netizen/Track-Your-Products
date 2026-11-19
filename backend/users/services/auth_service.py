@@ -1,7 +1,8 @@
 from django.db import transaction, DatabaseError
 from ninja_jwt.tokens import AccessToken
+from django.utils import timezone
 
-from users.utils.auth_validator import (
+from users.validators.auth_validator import (
     validate_free_user, is_expired_verify, 
     is_correct_code_verify, is_correct_tmp_token_verify
 )
@@ -11,7 +12,7 @@ from users.utils.auth_util import (
     load_email_html_verify, send_email_verify, 
     get_verification
 )
-from users.utils.general_validator import (
+from users.validators.general_validator import (
     validate_username, validate_email, 
     validate_password
 )
@@ -40,12 +41,17 @@ def register_user(payload: RegisterPayload):
             validation = validate_free_user(payload.username, payload.email)
             if not validation["success"]:
                 user = validation['user']
-                if (not user.is_verified):
+                if not user.is_verified:
                     user.delete()
                 else:
                     return validation
 
             data_user = parse_data_user(payload.username, payload.email, payload.password, None, False)
+            if not data_user['success']:
+                return data_user
+
+            data_user.pop('success', None)
+            
             user = User.objects.create_user(**data_user)
             code = create_code_verify()
             expire_date = create_expire_data_code_verify()
@@ -133,7 +139,7 @@ def verify_user(payload: VerifyPayload):
     verification = response_verification['verification']
 
     is_expired = is_expired_verify(verification)
-    if (is_expired['success'] == False):
+    if is_expired['success'] == False:
         return {
             'success': is_expired['success'],
             'message_error': is_expired['message_error'],
@@ -141,7 +147,7 @@ def verify_user(payload: VerifyPayload):
         }
     
     response_verification = is_correct_code_verify(verification, payload.code)
-    if (response_verification['success'] == False):
+    if response_verification['success'] == False:
         return {
             'success': response_verification['success'],
             'message_error': response_verification['message_error'],
@@ -154,6 +160,9 @@ def verify_user(payload: VerifyPayload):
         user.save()
 
     verification.delete()
+
+    user.last_login = timezone.now()
+    user.save()
 
     return {
         'success': True,
@@ -175,7 +184,7 @@ def request_password_recovery(username: str):
             'message_error': "El usuario no es incorrecto.",
         }
 
-    if (user.is_verified == False):
+    if user.is_verified == False:
         return {
             'success': False,
             'message_error': "El usuario no ha sido verificado.",
@@ -205,17 +214,17 @@ def request_password_recovery(username: str):
 # Verifica el codigo de recuperacion de contraseña y devuelve el id del usuario si es valido
 def verify_password_recovery(payload: VerifyPayload):
     response_verification = get_verification(payload.username)
-    if (response_verification['success'] == False):
+    if response_verification['success'] == False:
         return response_verification
 
     verification = response_verification['verification']
 
     is_expired = is_expired_verify(verification)
-    if (is_expired['success'] == False):
+    if is_expired['success'] == False:
         return is_expired
     
     response_verification = is_correct_code_verify(verification, payload.code)
-    if (response_verification['success'] == False):
+    if response_verification['success'] == False:
         return {
             'success': False,
             'message_error': response_verification['message_error']
@@ -230,11 +239,11 @@ def verify_password_recovery(payload: VerifyPayload):
 # Resetea la contraseña de un usuario a partir de su id y la nueva contraseña
 def reset_password(payload: ResetPasswordPayload):
     verification__response = get_verification(payload.username)
-    if (verification__response['success'] == False):
+    if verification__response['success'] == False:
         return verification__response
     
     validation = is_correct_tmp_token_verify(verification__response['verification'], payload.tmp_token)
-    if (validation['success'] == False):
+    if validation['success'] == False:
         return validation
     
     validation = validate_password(payload.password, payload.repeat_password)
